@@ -1,0 +1,51 @@
+/* Global styles */
+html {
+  font-family: 'Roboto', sans-serif;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
+/* Custom utility classes */
+.fill-height {
+  height: 100%;
+}
+
+/* Vuetify overrides */
+.v-application {
+  font-family: 'Roboto', sans-serif !important;
+}
+
+.v-card {
+  border-radius: 8px;
+}
+
+.v-btn {
+  text-transform: none;
+}
+
+/* Text utilities */
+.text-center {
+  text-align: center;
+}
+
+/* Spacing utilities */
+.mt-4 {
+  margin-top: 1rem;
+}
+
+.mb-4 {
+  margin-bottom: 1rem;
+}
+
+.my-4 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Dark mode */
+:root {
+  color-scheme: dark;
+}
