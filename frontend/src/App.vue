@@ -2,7 +2,7 @@
   <v-app>
     <v-navigation-drawer
       v-model="drawer"
-      v-if="isAuthenticated"
+      v-if="isLoggedIn"
       temporary
     >
       <v-list>
@@ -19,13 +19,13 @@
 
     <v-app-bar>
       <template v-slot:prepend>
-        <v-app-bar-nav-icon v-if="isAuthenticated" @click="drawer = !drawer" />
+        <v-app-bar-nav-icon v-if="isLoggedIn" @click="drawer = !drawer" />
       </template>
 
       <v-app-bar-title>ML Wallet</v-app-bar-title>
 
       <template v-slot:append>
-        <v-btn v-if="isAuthenticated" icon @click="handleLogout">
+        <v-btn v-if="isLoggedIn" icon @click="handleLogout">
           <v-icon>mdi-logout</v-icon>
         </v-btn>
       </template>
@@ -55,8 +55,9 @@ const menuItems = [
   { title: 'Check Deposit', path: '/check-deposit', icon: 'mdi-checkbox-marked-circle' }
 ];
 
-const isAuthenticated = computed(() => {
-  return !!localStorage.getItem('token');
+const isLoggedIn = computed(() => {
+  const token = localStorage.getItem('token');
+  return !!token;
 });
 
 const handleLogout = () => {

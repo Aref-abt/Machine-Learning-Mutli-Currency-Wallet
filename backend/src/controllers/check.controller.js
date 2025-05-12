@@ -42,7 +42,7 @@ export const depositCheck = async (req, res) => {
       // Create transaction record
       const transaction = await Transaction.create({
         walletId,
-        type: 'deposit',
+        type: 'check_deposit',
         amount: parsedAmount,
         currency: wallet.currency,
         status: 'completed',
@@ -75,7 +75,7 @@ export const getCheckDeposits = async (req, res) => {
       order: [['createdAt', 'DESC']]
     });
 
-    res.json({ deposits });
+    res.json(deposits);
   } catch (error) {
     logger.error('Error fetching check deposits:', error);
     res.status(500).json({ message: 'Error fetching check deposits' });

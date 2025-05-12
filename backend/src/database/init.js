@@ -4,8 +4,8 @@ import '../models/index.js';
 // Initialize database
 export const initializeDatabase = async () => {
   try {
-    // Sync all models with alter to preserve data
-    await sequelize.sync({ alter: true });
+    // Sync all models
+    await sequelize.sync();
     console.log('Database synchronized successfully');
   } catch (error) {
     console.error('Database initialization failed:', error);

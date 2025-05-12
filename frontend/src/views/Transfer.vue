@@ -134,6 +134,7 @@ import { ref, computed, onMounted } from 'vue';
 import QrcodeVue from 'qrcode.vue';
 import axios from 'axios';
 
+// Form refs and data
 const form = ref(null);
 const wallets = ref([]);
 const selectedWallet = ref(null);
@@ -141,11 +142,13 @@ const receiveWallet = ref(null);
 const toWalletId = ref('');
 const amount = ref('');
 const note = ref('');
+
+// UI state
 const loading = ref(false);
 const showSuccess = ref(false);
-const recentTransfers = ref([]);
-const errorMessage = ref('');
 const showError = ref(false);
+const errorMessage = ref('');
+const recentTransfers = ref([]);
 
 const balanceHint = computed(() => {
   if (!selectedWallet.value) return '';
@@ -215,14 +218,18 @@ const handleTransfer = async () => {
     const response = await axios.post('http://localhost:3001/api/transfer', {
       fromWalletId: selectedWallet.value.id,
       toWalletId: toWalletId.value,
-      amount: parsedAmount
+      amount: parsedAmount,
+      note: note.value
     }, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      headers: { 
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'application/json'
+      }
     });
 
     // Update wallet balance
-    if (response.data.newBalance !== undefined) {
-      selectedWallet.value.balance = response.data.newBalance;
+    if (response.data.fromBalance !== undefined) {
+      selectedWallet.value.balance = response.data.fromBalance;
     }
 
     showSuccess.value = true;
@@ -230,7 +237,11 @@ const handleTransfer = async () => {
     selectedWallet.value = null;
     toWalletId.value = '';
     amount.value = '';
-    await fetchWallets(); // Refresh wallets to get updated balances
+    note.value = '';
+    await Promise.all([
+      fetchWallets(),
+      fetchRecentTransfers()
+    ]);
   } catch (error) {
     console.error('Transfer error:', error);
     errorMessage.value = error.response?.data?.message || 'Transfer failed';
@@ -245,7 +256,13 @@ const fetchRecentTransfers = async () => {
     const response = await axios.get('http://localhost:3001/api/transfer/history', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    recentTransfers.value = response.data.transfers;
+    recentTransfers.value = response.data.map(t => ({
+      id: t.id,
+      amount: t.amount,
+      currency: t.currency,
+      type: t.type === 'transfer_out' ? 'sent' : 'received',
+      created_at: t.createdAt
+    }));
   } catch (error) {
     console.error('Error fetching transfers:', error);
   }

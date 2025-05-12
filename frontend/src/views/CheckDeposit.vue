@@ -148,17 +148,22 @@ const fetchWallets = async () => {
 
 const fetchRecentDeposits = async () => {
   try {
-    const response = await axios.get('http://localhost:3001/api/check/deposits', {
+    const response = await axios.get('http://localhost:3001/api/check/deposit/history', {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
-    recentDeposits.value = response.data.deposits.map(deposit => ({
-      ...deposit,
-      formattedAmount: new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: deposit.currency
-      }).format(deposit.amount),
-      formattedDate: new Date(deposit.createdAt).toLocaleDateString()
-    }));
+    if (Array.isArray(response.data)) {
+      recentDeposits.value = response.data.map(deposit => ({
+        id: deposit.id,
+        amount: deposit.amount,
+        currency: deposit.currency,
+        type: deposit.type || 'check_deposit',
+        description: deposit.description || 'Check Deposit',
+        formattedAmount: formatAmount(deposit.amount, deposit.currency),
+        formattedDate: new Date(deposit.createdAt).toLocaleDateString(),
+        created_at: deposit.createdAt,
+        status: deposit.status || 'completed'
+      }));
+    }
   } catch (error) {
     console.error('Error fetching deposits:', error);
   }

@@ -8,6 +8,6 @@ const router = Router();
 router.use(authMiddleware);
 
 router.post('/deposit', upload.single('checkImage'), depositCheck);
-router.get('/deposits', getCheckDeposits);
+router.get('/deposit/history', getCheckDeposits);
 
 export default router;
