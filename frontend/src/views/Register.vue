@@ -63,7 +63,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { AuthService } from '../services/auth.service';
 
 const router = useRouter();
 const form = ref(null);
@@ -77,16 +77,11 @@ const handleSubmit = async () => {
   
   loading.value = true;
   try {
-    const response = await axios.post('http://localhost:3001/api/auth/register', {
-      email: email.value,
-      password: password.value
-    });
-
-    localStorage.setItem('token', response.data.token);
+    await AuthService.register(email.value, password.value);
     router.push('/wallet');
   } catch (error) {
     console.error('Registration error:', error);
-    alert(error.response?.data?.message || 'Registration failed');
+    alert(error.message || 'Registration failed');
   } finally {
     loading.value = false;
   }

@@ -19,7 +19,7 @@ const Wallet = sequelize.define('Wallet', {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isIn: [['USD', 'MXN', 'PHP']]
+      isIn: [['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY']]
     }
   },
   balance: {

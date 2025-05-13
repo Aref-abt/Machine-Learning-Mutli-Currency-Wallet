@@ -7,6 +7,9 @@ import Transaction from './transaction.model.js';
 User.hasMany(Wallet, { foreignKey: 'userId' });
 Wallet.belongsTo(User, { foreignKey: 'userId' });
 
+User.hasMany(Transaction, { foreignKey: 'userId' });
+Transaction.belongsTo(User, { foreignKey: 'userId' });
+
 Wallet.hasMany(Transaction, { foreignKey: 'walletId', as: 'transactions' });
 Transaction.belongsTo(Wallet, { foreignKey: 'walletId' });
 

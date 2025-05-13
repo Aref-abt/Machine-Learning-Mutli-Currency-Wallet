@@ -49,7 +49,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { AuthService } from '../services/auth.service';
 
 const router = useRouter();
 const form = ref(null);
@@ -62,16 +62,11 @@ const handleSubmit = async () => {
   
   loading.value = true;
   try {
-    const response = await axios.post('http://localhost:3001/api/auth/login', {
-      email: email.value,
-      password: password.value
-    });
-
-    localStorage.setItem('token', response.data.token);
+    await AuthService.login(email.value, password.value);
     router.push('/wallet');
   } catch (error) {
     console.error('Login error:', error);
-    alert(error.response?.data?.message || 'Login failed');
+    alert(error.message || 'Login failed');
   } finally {
     loading.value = false;
   }

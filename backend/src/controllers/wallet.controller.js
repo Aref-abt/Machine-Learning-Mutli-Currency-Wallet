@@ -11,8 +11,9 @@ export const createWallet = async (req, res) => {
       return res.status(400).json({ message: 'Currency is required' });
     }
 
-    if (!['USD', 'MXN', 'PHP'].includes(currency)) {
-      return res.status(400).json({ message: 'Invalid currency. Supported currencies: USD, MXN, PHP' });
+    const supportedCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY'];
+    if (!supportedCurrencies.includes(currency)) {
+      return res.status(400).json({ message: `Invalid currency. Supported currencies: ${supportedCurrencies.join(', ')}` });
     }
 
     // Check if user already has a wallet in this currency
@@ -47,20 +48,50 @@ export const createWallet = async (req, res) => {
 
 export const getWallets = async (req, res) => {
   try {
+    logger.info('Fetching wallets for user:', { userId: req.user?.id });
+    
+    if (!req.user?.id) {
+      logger.error('No user ID found in request');
+      return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    // Get wallets without transactions first
     const wallets = await Wallet.findAll({
-      where: { userId: req.user.id },
-      include: [{
-        model: Transaction,
-        as: 'transactions',
-        separate: true,
-        limit: 5,
-        order: [['createdAt', 'DESC']]
-      }]
+      raw: true,
+      where: { userId: req.user.id }
     });
 
-    res.json({ wallets });
+    // Map wallets to include empty transactions array
+    const walletsWithTransactions = wallets.map(wallet => ({
+      ...wallet,
+      transactions: []
+    }));
+
+    // Get transactions for each wallet
+    for (const wallet of walletsWithTransactions) {
+      try {
+        const transactions = await Transaction.findAll({
+          raw: true,
+          where: { walletId: wallet.id },
+          limit: 5,
+          order: [['createdAt', 'DESC']]
+        });
+        wallet.transactions = transactions;
+      } catch (error) {
+        logger.error('Error fetching transactions for wallet:', { walletId: wallet.id, error });
+        // Continue with empty transactions array
+      }
+    }
+
+    logger.info('Successfully fetched wallets:', { count: walletsWithTransactions.length });
+    res.json({ wallets: walletsWithTransactions });
   } catch (error) {
     logger.error('Error fetching wallets:', error);
+    logger.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     res.status(500).json({ message: 'Error fetching wallets' });
   }
 };
@@ -130,6 +161,7 @@ export const createTransaction = async (req, res) => {
 
       // Create transaction record
       const transaction = await Transaction.create({
+        userId: req.user.id,
         walletId,
         type,
         amount: parsedAmount,

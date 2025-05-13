@@ -41,6 +41,7 @@ export const depositCheck = async (req, res) => {
 
       // Create transaction record
       const transaction = await Transaction.create({
+        userId: req.user.id,
         walletId,
         type: 'check_deposit',
         amount: parsedAmount,
@@ -66,12 +67,10 @@ export const depositCheck = async (req, res) => {
 export const getCheckDeposits = async (req, res) => {
   try {
     const deposits = await Transaction.findAll({
-      include: [{
-        model: Wallet,
-        where: { userId: req.user.id },
-        attributes: []
-      }],
-      where: { type: 'check_deposit' },
+      where: { 
+        userId: req.user.id,
+        type: 'check_deposit'
+      },
       order: [['createdAt', 'DESC']]
     });
 

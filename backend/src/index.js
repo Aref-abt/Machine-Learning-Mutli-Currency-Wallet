@@ -8,6 +8,7 @@ import walletRoutes from './routes/wallet.routes.js';
 import exchangeRoutes from './routes/exchange.routes.js';
 import transferRoutes from './routes/transfer.routes.js';
 import checkRoutes from './routes/check.routes.js';
+import transactionRoutes from './routes/transaction.routes.js';
 
 // Load environment variables
 config();
@@ -17,7 +18,7 @@ const port = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173'],
+  origin: ['http://localhost:5173', 'http://127.0.0.1:51903'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -31,6 +32,7 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/check', checkRoutes);
 app.use('/api/exchange', exchangeRoutes);
 app.use('/api/transfer', transferRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
