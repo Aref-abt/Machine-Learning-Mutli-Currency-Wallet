@@ -52,7 +52,7 @@ const drawer = ref(true);
 const menuItems = [
   { title: 'Wallets', path: '/wallet', icon: 'mdi-wallet' },
   { title: 'Exchange', path: '/exchange', icon: 'mdi-currency-usd' },
-  { title: 'Transfer', path: '/transfer', icon: 'mdi-bank-transfer' },
+  { title: 'Receive Money', path: '/transfer', icon: 'mdi-qrcode' },
   { title: 'Check Deposit', path: '/check-deposit', icon: 'mdi-checkbox-marked-circle' },
   { title: 'Analytics', path: '/analytics', icon: 'mdi-chart-box' },
   { title: 'Security', path: '/security', icon: 'mdi-shield-check', highlight: true }

@@ -2,71 +2,11 @@
   <v-container>
     <v-row>
       <v-col cols="12">
-        <h1 class="text-h4 mb-4">Transfer Money</h1>
+        <h1 class="text-h4 mb-4">Receive Money</h1>
       </v-col>
     </v-row>
 
     <v-row>
-      <v-col cols="12" md="6">
-        <v-card>
-          <v-card-title>Send Money</v-card-title>
-          <v-card-text>
-            <v-form ref="form" @submit.prevent="handleTransfer">
-              <v-select
-                v-model="selectedWallet"
-                :items="wallets"
-                label="Select Wallet"
-                :item-title="item => `${item.currency} - ${formatAmount(item.balance, item.currency)}`"
-                item-value="id"
-                required
-                :rules="[v => !!v || 'Please select a wallet']"
-                :loading="loading"
-                :disabled="loading"
-                return-object
-              />
-
-              <v-text-field
-                v-model="toWalletId"
-                label="Recipient Wallet ID"
-                required
-                :rules="[
-                  v => !!v || 'Recipient wallet ID is required',
-                  v => !v || v !== selectedWallet.value?.id || 'Cannot transfer to the same wallet'
-                ]"
-                hint="Enter the wallet ID from recipient's QR code"
-                persistent-hint
-              />
-
-              <v-text-field
-                v-model="amount"
-                label="Amount"
-                type="number"
-                required
-                :rules="amountRules"
-                :hint="balanceHint"
-                persistent-hint
-              />
-
-              <v-textarea
-                v-model="note"
-                label="Note (optional)"
-                rows="2"
-              />
-
-              <v-btn
-                color="primary"
-                block
-                type="submit"
-                :loading="loading"
-                :disabled="loading || !isFormValid"
-              >
-                Send Money
-              </v-btn>
-            </v-form>
-          </v-card-text>
-        </v-card>
-      </v-col>
-
       <v-col cols="12" md="6">
         <v-card>
           <v-card-title>Receive Money</v-card-title>
@@ -137,35 +77,14 @@ import axios from 'axios';
 // Form refs and data
 const form = ref(null);
 const wallets = ref([]);
-const selectedWallet = ref(null);
 const receiveWallet = ref(null);
-const toWalletId = ref('');
-const amount = ref('');
-const note = ref('');
+const recentTransfers = ref([]);
 
 // UI state
 const loading = ref(false);
 const showSuccess = ref(false);
 const showError = ref(false);
 const errorMessage = ref('');
-const recentTransfers = ref([]);
-
-const balanceHint = computed(() => {
-  if (!selectedWallet.value) return '';
-  return `Available: ${formatAmount(selectedWallet.value.balance, selectedWallet.value.currency)}`;
-});
-
-const amountRules = computed(() => [
-  v => !!v || 'Amount is required',
-  v => !v || parseFloat(v) > 0 || 'Amount must be greater than 0',
-  v => {
-    if (!v || !selectedWallet.value) return true;
-    const parsedAmount = parseFloat(v);
-    const balance = parseFloat(selectedWallet.value.balance);
-    return parsedAmount <= balance || 
-      `Insufficient balance. Available: ${formatAmount(balance, selectedWallet.value.currency)}`;
-  }
-]);
 
 const fetchWallets = async () => {
   try {
@@ -178,78 +97,7 @@ const fetchWallets = async () => {
   }
 };
 
-const isFormValid = computed(() => {
-  return !!selectedWallet.value && !!toWalletId.value && !!amount.value;
-});
 
-const handleTransfer = async () => {
-  if (!form.value?.validate()) return;
-
-  if (!isFormValid.value) {
-    errorMessage.value = 'Please fill in all required fields';
-    showError.value = true;
-    return;
-  }
-
-  // Validate amount
-  const parsedAmount = parseFloat(amount.value);
-  if (isNaN(parsedAmount) || parsedAmount <= 0) {
-    errorMessage.value = 'Please enter a valid amount';
-    showError.value = true;
-    return;
-  }
-
-  // Check balance
-  if (parsedAmount > selectedWallet.value.balance) {
-    errorMessage.value = `Insufficient balance. Available: ${formatAmount(selectedWallet.value.balance, selectedWallet.value.currency)}`;
-    showError.value = true;
-    return;
-  }
-
-  // Check if trying to transfer to same wallet
-  if (toWalletId.value === selectedWallet.value.id) {
-    errorMessage.value = 'Cannot transfer to the same wallet';
-    showError.value = true;
-    return;
-  }
-
-  loading.value = true;
-  try {
-    const response = await axios.post('http://localhost:3001/api/transfer', {
-      fromWalletId: selectedWallet.value.id,
-      toWalletId: toWalletId.value,
-      amount: parsedAmount,
-      note: note.value
-    }, {
-      headers: { 
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    // Update wallet balance
-    if (response.data.fromBalance !== undefined) {
-      selectedWallet.value.balance = response.data.fromBalance;
-    }
-
-    showSuccess.value = true;
-    form.value.reset();
-    selectedWallet.value = null;
-    toWalletId.value = '';
-    amount.value = '';
-    note.value = '';
-    await Promise.all([
-      fetchWallets(),
-      fetchRecentTransfers()
-    ]);
-  } catch (error) {
-    console.error('Transfer error:', error);
-    errorMessage.value = error.response?.data?.message || 'Transfer failed';
-    showError.value = true;
-  } finally {
-    loading.value = false;
-  }
-};
 
 const fetchRecentTransfers = async () => {
   try {
@@ -300,12 +148,7 @@ const qrValue = computed(() => {
   });
 });
 
-const isTransferValid = computed(() => {
-  return selectedWallet.value && 
-         recipientEmail.value && 
-         amount.value > 0 && 
-         amount.value <= getWalletBalance(selectedWallet.value);
-});
+
 
 onMounted(() => {
   fetchWallets();
