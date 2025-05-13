@@ -71,6 +71,7 @@ const transfer = async (req, res) => {
 
       // Create transaction records
       const outgoingTransaction = await Transaction.create({
+        userId: req.user.id,
         walletId: fromWalletId,
         type: 'transfer_out',
         amount: parsedAmount,
@@ -80,6 +81,7 @@ const transfer = async (req, res) => {
       }, { transaction: t });
 
       const incomingTransaction = await Transaction.create({
+        userId: toWallet.userId, // Use recipient's userId
         walletId: toWalletId,
         type: 'transfer_in',
         amount: parsedAmount,

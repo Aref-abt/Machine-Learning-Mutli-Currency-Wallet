@@ -124,7 +124,11 @@
               v-model="newWalletCurrency"
               label="Currency"
               :items="availableCurrencies"
+              item-title="title"
+              item-value="value"
               :rules="[v => !!v || 'Currency is required']"
+              hint="Select the currency for your new wallet"
+              persistent-hint
             />
           </v-form>
         </v-card-text>
@@ -160,7 +164,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import api from '../api';
+import { WalletService } from '../services/wallet.service';
 
 const wallets = ref([]);
 const showDepositDialog = ref(false);
@@ -177,17 +181,26 @@ const withdrawForm = ref(null);
 const createWalletForm = ref(null);
 const newWalletCurrency = ref('');
 
-const availableCurrencies = ['USD', 'MXN', 'PHP'];
+const availableCurrencies = [
+  { title: 'US Dollar', value: 'USD' },
+  { title: 'Euro', value: 'EUR' },
+  { title: 'British Pound', value: 'GBP' },
+  { title: 'Japanese Yen', value: 'JPY' },
+  { title: 'Australian Dollar', value: 'AUD' },
+  { title: 'Canadian Dollar', value: 'CAD' },
+  { title: 'Swiss Franc', value: 'CHF' },
+  { title: 'Chinese Yuan', value: 'CNY' }
+];
 
 const fetchWallets = async () => {
   try {
-    const response = await api.get('/wallet');
-    wallets.value = response.data.wallets;
+    const response = await WalletService.getWallets();
+    wallets.value = response.wallets;
   } catch (error) {
     console.error('Error fetching wallets:', error);
     errorMessage.value = error.message === 'Network Error' ? 
       'Cannot connect to server. Please try again later.' : 
-      'Failed to fetch wallets';
+      error.message || 'Failed to fetch wallets';
     showError.value = true;
   }
 };
@@ -209,12 +222,12 @@ const handleDeposit = async () => {
   
   loading.value = true;
   try {
-    await api.post('/wallet/transaction', {
-      walletId: selectedWallet.value.id,
-      type: 'deposit',
-      amount: transactionAmount.value,
-      currency: selectedWallet.value.currency
-    });
+    await WalletService.createTransaction(
+      selectedWallet.value.id,
+      'deposit',
+      transactionAmount.value,
+      selectedWallet.value.currency
+    );
 
     showDepositDialog.value = false;
     showSuccess.value = true;
@@ -223,7 +236,7 @@ const handleDeposit = async () => {
     console.error('Deposit error:', error);
     errorMessage.value = error.message === 'Network Error' ? 
       'Cannot connect to server. Please try again later.' : 
-      error.response?.data?.message || 'Deposit failed';
+      error.message || 'Deposit failed';
     showError.value = true;
   } finally {
     loading.value = false;
@@ -235,12 +248,12 @@ const handleWithdraw = async () => {
   
   loading.value = true;
   try {
-    await api.post('/wallet/transaction', {
-      walletId: selectedWallet.value.id,
-      type: 'withdrawal',
-      amount: transactionAmount.value,
-      currency: selectedWallet.value.currency
-    });
+    await WalletService.createTransaction(
+      selectedWallet.value.id,
+      'withdrawal',
+      transactionAmount.value,
+      selectedWallet.value.currency
+    );
 
     showWithdrawDialog.value = false;
     showSuccess.value = true;
@@ -249,7 +262,7 @@ const handleWithdraw = async () => {
     console.error('Withdrawal error:', error);
     errorMessage.value = error.message === 'Network Error' ? 
       'Cannot connect to server. Please try again later.' : 
-      error.response?.data?.message || 'Withdrawal failed';
+      error.message || 'Withdrawal failed';
     showError.value = true;
   } finally {
     loading.value = false;
@@ -283,9 +296,7 @@ const handleCreateWallet = async () => {
   
   loading.value = true;
   try {
-    await api.post('/wallet', {
-      currency: newWalletCurrency.value
-    });
+    await WalletService.createWallet(newWalletCurrency.value);
 
     showCreateWalletDialog.value = false;
     fetchWallets();
@@ -293,7 +304,7 @@ const handleCreateWallet = async () => {
     console.error('Create wallet error:', error);
     errorMessage.value = error.message === 'Network Error' ? 
       'Cannot connect to server. Please try again later.' : 
-      error.response?.data?.message || 'Failed to create wallet';
+      error.message || 'Failed to create wallet';
     showError.value = true;
   } finally {
     loading.value = false;

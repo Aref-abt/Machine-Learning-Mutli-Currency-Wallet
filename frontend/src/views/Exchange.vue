@@ -26,9 +26,14 @@
                     <template v-slot:item="{ props, item }">
                       <v-list-item v-bind="props">
                         <template v-slot:prepend>
-                          {{ item.raw.currency }}
+                          <v-icon :color="getCurrencyColor(item.raw.currency)">
+                            {{ getCurrencyIcon(item.raw.currency) }}
+                          </v-icon>
                         </template>
                         <template v-slot:title>
+                          {{ getCurrencyName(item.raw.currency) }}
+                        </template>
+                        <template v-slot:subtitle>
                           {{ formatAmount(item.raw.balance, item.raw.currency) }}
                         </template>
                       </v-list-item>
@@ -49,9 +54,14 @@
                     <template v-slot:item="{ props, item }">
                       <v-list-item v-bind="props">
                         <template v-slot:prepend>
-                          {{ item.raw.currency }}
+                          <v-icon :color="getCurrencyColor(item.raw.currency)">
+                            {{ getCurrencyIcon(item.raw.currency) }}
+                          </v-icon>
                         </template>
                         <template v-slot:title>
+                          {{ getCurrencyName(item.raw.currency) }}
+                        </template>
+                        <template v-slot:subtitle>
                           {{ formatAmount(item.raw.balance, item.raw.currency) }}
                         </template>
                       </v-list-item>
@@ -116,13 +126,25 @@
                 v-for="(rates, from) in exchangeRates"
                 :key="from"
               >
+                <template v-slot:prepend>
+                  <v-icon :color="getCurrencyColor(from)">
+                    {{ getCurrencyIcon(from) }}
+                  </v-icon>
+                </template>
                 <v-list-item-title class="text-subtitle-1 font-weight-bold">
-                  {{ from }}
+                  {{ getCurrencyName(from) }}
                 </v-list-item-title>
                 <v-list-item-subtitle>
-                  <div v-for="(rate, to) in rates" :key="to">
+                  <v-chip
+                    v-for="(rate, to) in rates"
+                    :key="to"
+                    :color="getCurrencyColor(to)"
+                    variant="outlined"
+                    size="small"
+                    class="ma-1"
+                  >
                     1 {{ from }} = {{ rate }} {{ to }}
-                  </div>
+                  </v-chip>
                 </v-list-item-subtitle>
               </v-list-item>
             </v-list>
@@ -152,6 +174,18 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import axios from 'axios';
+
+// Currency metadata
+const CURRENCY_INFO = {
+  USD: { name: 'US Dollar', icon: 'mdi-currency-usd', color: 'success' },
+  EUR: { name: 'Euro', icon: 'mdi-currency-eur', color: 'primary' },
+  GBP: { name: 'British Pound', icon: 'mdi-currency-gbp', color: 'indigo' },
+  JPY: { name: 'Japanese Yen', icon: 'mdi-currency-jpy', color: 'red' },
+  AUD: { name: 'Australian Dollar', icon: 'mdi-currency-usd', color: 'orange' },
+  CAD: { name: 'Canadian Dollar', icon: 'mdi-currency-usd', color: 'red-darken-2' },
+  CHF: { name: 'Swiss Franc', icon: 'mdi-currency-chf', color: 'red-accent-4' },
+  CNY: { name: 'Chinese Yuan', icon: 'mdi-currency-cny', color: 'yellow-darken-3' }
+};
 
 const form = ref(null);
 const wallets = ref([]);
@@ -259,6 +293,18 @@ const getWalletBalance = (walletId) => {
 const getWalletCurrency = (walletId) => {
   const wallet = wallets.value.find(w => w.id === walletId);
   return wallet ? wallet.currency : '';
+};
+
+const getCurrencyName = (currency) => {
+  return CURRENCY_INFO[currency]?.name || currency;
+};
+
+const getCurrencyIcon = (currency) => {
+  return CURRENCY_INFO[currency]?.icon || 'mdi-currency-usd';
+};
+
+const getCurrencyColor = (currency) => {
+  return CURRENCY_INFO[currency]?.color || 'grey';
 };
 
 const updateExchangeRate = () => {

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middleware/auth.middleware.js';
+import authMiddleware from '../middleware/auth.middleware.js';
 import upload from '../middleware/upload.js';
 import { depositCheck, getCheckDeposits } from '../controllers/check.controller.js';
 

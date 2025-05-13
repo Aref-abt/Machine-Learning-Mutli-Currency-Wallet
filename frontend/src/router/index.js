@@ -5,6 +5,8 @@ import Wallet from '../views/Wallet.vue';
 import Exchange from '../views/Exchange.vue';
 import Transfer from '../views/Transfer.vue';
 import CheckDeposit from '../views/CheckDeposit.vue';
+import Analytics from '../views/Analytics.vue';
+import Security from '../views/Security.vue';
 
 const routes = [
   {
@@ -45,6 +47,18 @@ const routes = [
     path: '/check-deposit',
     name: 'CheckDeposit',
     component: CheckDeposit,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/analytics',
+    name: 'Analytics',
+    component: Analytics,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/security',
+    name: 'Security',
+    component: Security,
     meta: { requiresAuth: true }
   }
 ];

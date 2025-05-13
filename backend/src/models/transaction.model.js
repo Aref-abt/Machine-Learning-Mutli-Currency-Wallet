@@ -1,17 +1,25 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../database/db.js';
 
-const Transaction = sequelize.define('Transaction', {
+const Transaction = sequelize.define('Transactions', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'Users',
+      key: 'id'
+    }
+  },
   walletId: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'wallets',
+      model: 'Wallets',
       key: 'id'
     }
   },
@@ -19,7 +27,7 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isIn: [['deposit', 'withdrawal', 'transfer_in', 'transfer_out', 'check_deposit', 'exchange']]
+      isIn: [['deposit', 'withdrawal', 'transfer_in', 'transfer_out', 'exchange', 'check_deposit']]
     }
   },
   amount: {
@@ -30,7 +38,7 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isIn: [['USD', 'MXN', 'PHP']]
+      isIn: [['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY']]
     }
   },
   status: {

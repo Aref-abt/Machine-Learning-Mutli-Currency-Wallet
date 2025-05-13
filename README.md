@@ -4,7 +4,7 @@ A digital wallet system with ML-powered features for currency exchange optimizat
 
 ## Features
 
-- Multi-currency wallet support (USD, MXN, PHP)
+- Multi-currency wallet support (USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY)
 - ML-powered exchange rate predictions
 - Check cashing integration
 - Secure wallet-to-wallet transfers

@@ -2,11 +2,16 @@ import { logger } from '../utils/logger.js';
 import { sequelize } from '../database/db.js';
 import { Wallet, Transaction } from '../models/index.js';
 
-// Mock exchange rates for demo
+// Mock exchange rates for demo (based on approximate real rates)
 const MOCK_RATES = {
-  'USD': { 'MXN': 17.50, 'PHP': 55.75 },
-  'MXN': { 'USD': 0.057, 'PHP': 3.18 },
-  'PHP': { 'USD': 0.018, 'MXN': 0.31 }
+  'USD': { 'EUR': 0.91, 'GBP': 0.79, 'JPY': 143.50, 'AUD': 1.48, 'CAD': 1.34, 'CHF': 0.89, 'CNY': 7.14 },
+  'EUR': { 'USD': 1.10, 'GBP': 0.87, 'JPY': 157.63, 'AUD': 1.63, 'CAD': 1.47, 'CHF': 0.98, 'CNY': 7.84 },
+  'GBP': { 'USD': 1.27, 'EUR': 1.15, 'JPY': 181.18, 'AUD': 1.87, 'CAD': 1.69, 'CHF': 1.12, 'CNY': 9.01 },
+  'JPY': { 'USD': 0.0070, 'EUR': 0.0063, 'GBP': 0.0055, 'AUD': 0.0103, 'CAD': 0.0093, 'CHF': 0.0062, 'CNY': 0.0497 },
+  'AUD': { 'USD': 0.68, 'EUR': 0.61, 'GBP': 0.53, 'JPY': 97.15, 'CAD': 0.91, 'CHF': 0.60, 'CNY': 4.83 },
+  'CAD': { 'USD': 0.75, 'EUR': 0.68, 'GBP': 0.59, 'JPY': 107.09, 'AUD': 1.10, 'CHF': 0.66, 'CNY': 5.33 },
+  'CHF': { 'USD': 1.13, 'EUR': 1.02, 'GBP': 0.89, 'JPY': 161.24, 'AUD': 1.66, 'CAD': 1.51, 'CNY': 8.02 },
+  'CNY': { 'USD': 0.14, 'EUR': 0.13, 'GBP': 0.11, 'JPY': 20.10, 'AUD': 0.21, 'CAD': 0.19, 'CHF': 0.12 }
 };
 
 export const getExchangeRates = async (req, res) => {
@@ -96,6 +101,7 @@ export const executeExchange = async (req, res) => {
 
       // Create transaction records
       await Transaction.create({
+        userId: req.user.id,
         walletId: fromWalletId,
         type: 'exchange',
         amount: parsedAmount,
@@ -104,6 +110,7 @@ export const executeExchange = async (req, res) => {
       }, { transaction: t });
 
       await Transaction.create({
+        userId: req.user.id,
         walletId: toWalletId,
         type: 'exchange',
         amount: convertedAmount,
