@@ -7,6 +7,7 @@ const router = express.Router();
 router.use(authMiddleware);
 
 router.post('/', authMiddleware, transfer);
+router.get('/', authMiddleware, transfer); // Add GET route for preview
 router.get('/history', getTransferHistory);
 
 export default router;

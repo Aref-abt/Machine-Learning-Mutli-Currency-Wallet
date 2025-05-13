@@ -25,12 +25,50 @@ export class WalletService {
       throw { message: 'Error executing exchange' };
     }
   }
+
   static async getWallets() {
     try {
       const response = await api.get('/wallet');
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Error fetching wallets' };
+    }
+  }
+
+  static async previewTransfer(fromWalletId, toWalletId, amount) {
+    try {
+      const response = await api.get('/transfer', {
+        params: {
+          preview: true,
+          fromWalletId,
+          toWalletId,
+          amount
+        }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Error previewing transfer' };
+    }
+  }
+
+  static async transfer(fromWalletId, toWalletId, amount) {
+    try {
+      const response = await api.post('/transfer', {
+        fromWalletId,
+        toWalletId,
+        amount
+      }, {
+        params: {
+          confirmed: true // Add confirmation flag
+        }
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response?.data?.requiresConfirmation) {
+        // Return the exchange rate info for preview
+        return error.response.data;
+      }
+      throw error.response?.data || { message: 'Error executing transfer' };
     }
   }
 

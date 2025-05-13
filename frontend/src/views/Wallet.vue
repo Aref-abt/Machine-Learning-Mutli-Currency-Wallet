@@ -21,6 +21,20 @@
               {{ formatAmount(wallet.balance, wallet.currency) }}
             </v-chip>
           </v-card-title>
+          <v-card-subtitle class="d-flex align-center">
+            Wallet Address:
+            <v-tooltip text="Click to copy">
+              <template v-slot:activator="{ props }">
+                <span 
+                  v-bind="props"
+                  @click="copyToClipboard(wallet.id)"
+                  class="wallet-address ml-2"
+                >
+                  {{ wallet.id }}
+                </span>
+              </template>
+            </v-tooltip>
+          </v-card-subtitle>
 
           <v-card-text>
             <v-list>
@@ -53,6 +67,13 @@
               @click="openWithdrawDialog(wallet)"
             >
               Withdraw
+            </v-btn>
+            <v-btn
+              color="success"
+              variant="text"
+              @click="openTransferDialog(wallet)"
+            >
+              Transfer
             </v-btn>
           </v-card-actions>
         </v-card>
@@ -149,7 +170,7 @@
       color="success"
       timeout="3000"
     >
-      Wallet created successfully!
+      {{ successMessage || 'Operation completed successfully!' }}
     </v-snackbar>
 
     <v-snackbar
@@ -159,6 +180,75 @@
     >
       {{ errorMessage }}
     </v-snackbar>
+
+    <!-- Transfer Dialog -->
+    <v-dialog v-model="showTransferDialog" max-width="500px">
+      <v-card>
+        <v-card-title>Transfer Funds</v-card-title>
+        <v-card-text>
+          <v-form ref="transferForm">
+            <v-text-field
+              v-model="recipientWalletId"
+              label="Recipient Wallet Address"
+              :rules="[v => !!v || 'Wallet address is required']"
+            />
+            <v-text-field
+              v-model="transactionAmount"
+              label="Amount"
+              type="number"
+              :rules="[
+                v => !!v || 'Amount is required',
+                v => v <= selectedWallet?.balance || 'Insufficient funds'
+              ]"
+            />
+          </v-form>
+
+          <!-- Exchange Rate Preview -->
+          <v-card v-if="exchangePreview" class="mt-4 pa-4" variant="outlined">
+            <div class="text-subtitle-1 mb-2">Exchange Preview</div>
+            <v-list-item>
+              <template v-slot:prepend>
+                <v-icon icon="mdi-currency-exchange" color="success"></v-icon>
+              </template>
+              <v-list-item-title>
+                {{ formatAmount(exchangePreview.fromAmount, exchangePreview.fromCurrency) }}
+                → {{ formatAmount(exchangePreview.toAmount, exchangePreview.toCurrency) }}
+              </v-list-item-title>
+              <v-list-item-subtitle>
+                Rate: 1 {{ exchangePreview.fromCurrency }} = 
+                {{ exchangePreview.rate }} {{ exchangePreview.toCurrency }}
+              </v-list-item-subtitle>
+            </v-list-item>
+          </v-card>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn 
+            v-if="!exchangePreview"
+            color="primary" 
+            @click="previewTransfer" 
+            :loading="loading"
+          >
+            Preview Transfer
+          </v-btn>
+          <v-btn 
+            v-else
+            color="success" 
+            @click="handleTransfer" 
+            :loading="loading"
+          >
+            Confirm Transfer
+          </v-btn>
+          <v-btn 
+            color="error" 
+            @click="cancelTransfer"
+          >
+            Cancel
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 </template>
 
@@ -173,6 +263,11 @@ const showCreateWalletDialog = ref(false);
 const selectedWallet = ref(null);
 const transactionAmount = ref('');
 const showSuccess = ref(false);
+const successMessage = ref('');
+const showTransferDialog = ref(false);
+const recipientWalletId = ref('');
+const exchangePreview = ref(null);
+const transferForm = ref(null);
 const showError = ref(false);
 const errorMessage = ref('');
 const loading = ref(false);
@@ -291,6 +386,82 @@ const getStatusColor = (balance) => {
   return parseFloat(balance) > 0 ? 'success' : 'error';
 };
 
+const copyToClipboard = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text);
+    errorMessage.value = 'Wallet address copied to clipboard!';
+    showError.value = false;
+    showSuccess.value = true;
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    errorMessage.value = 'Failed to copy wallet address';
+    showError.value = true;
+  }
+};
+
+const openTransferDialog = (wallet) => {
+  selectedWallet.value = wallet;
+  recipientWalletId.value = '';
+  transactionAmount.value = '';
+  exchangePreview.value = null;
+  showTransferDialog.value = true;
+};
+
+const cancelTransfer = () => {
+  showTransferDialog.value = false;
+  exchangePreview.value = null;
+};
+
+const previewTransfer = async () => {
+  if (!transferForm.value?.validate()) return;
+
+  loading.value = true;
+  try {
+    const response = await WalletService.previewTransfer(
+      selectedWallet.value.id,
+      recipientWalletId.value,
+      transactionAmount.value
+    );
+    exchangePreview.value = response;
+  } catch (error) {
+    console.error('Preview error:', error);
+    errorMessage.value = error.response?.data?.message || 'Failed to preview transfer';
+    showError.value = true;
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleTransfer = async () => {
+  if (!transferForm.value?.validate()) return;
+
+  loading.value = true;
+  try {
+    const response = await WalletService.transfer(
+      selectedWallet.value.id,
+      recipientWalletId.value,
+      transactionAmount.value
+    );
+
+    if (response.requiresConfirmation) {
+      // Show exchange rate preview
+      exchangePreview.value = response;
+    } else {
+      showTransferDialog.value = false;
+      exchangePreview.value = null;
+      successMessage.value = 'Transfer completed successfully!';
+      showSuccess.value = true;
+      await fetchWallets();
+    }
+  } catch (error) {
+    console.error('Transfer error:', error);
+    errorMessage.value = error.response?.data?.message || 'Transfer failed';
+    showError.value = true;
+  } finally {
+    loading.value = false;
+  }
+};
+
 const handleCreateWallet = async () => {
   if (!createWalletForm.value?.validate()) return;
   
@@ -323,5 +494,15 @@ onMounted(fetchWallets);
 
 .v-card-text {
   flex-grow: 1;
+}
+
+.wallet-address {
+  font-family: monospace;
+  cursor: pointer;
+  color: primary;
+  font-size: 0.85rem;
+  &:hover {
+    text-decoration: underline;
+  }
 }
 </style>

@@ -6,7 +6,9 @@ import { logger } from '../utils/logger.js';
 const transfers = [];
 
 const transfer = async (req, res) => {
-  const { fromWalletId, toWalletId, amount } = req.body;
+  const fromWalletId = req.method === 'GET' ? req.query.fromWalletId : req.body.fromWalletId;
+  const toWalletId = req.method === 'GET' ? req.query.toWalletId : req.body.toWalletId;
+  const amount = req.method === 'GET' ? req.query.amount : req.body.amount;
 
   try {
     // Validate input
@@ -47,8 +49,55 @@ const transfer = async (req, res) => {
       });
     }
 
+    // If currencies are different, calculate exchange rate
+    let finalAmount = parsedAmount;
+    let exchangeRate = null;
+
     if (fromWallet.currency !== toWallet.currency) {
-      return res.status(400).json({ message: 'Cannot transfer between different currencies. Please use exchange.' });
+      try {
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromWallet.currency}`);
+        const data = await response.json();
+        exchangeRate = data.rates[toWallet.currency];
+        
+        if (!exchangeRate) {
+          return res.status(400).json({ 
+            message: 'Exchange rate not available for this currency pair'
+          });
+        }
+
+        finalAmount = parsedAmount * exchangeRate;
+
+        // Return exchange preview if preview flag is true
+        if (req.query.preview === 'true') {
+          return res.status(200).json({
+            fromAmount: parsedAmount,
+            fromCurrency: fromWallet.currency,
+            toAmount: finalAmount,
+            toCurrency: toWallet.currency,
+            rate: exchangeRate,
+            fees: 0, // You could add transfer fees here
+            preview: true
+          });
+        }
+
+        // If currencies are different and this is not a preview, require confirmation
+        if (req.query.confirmed !== 'true') {
+          return res.status(400).json({
+            message: 'Exchange rate confirmation required',
+            fromAmount: parsedAmount,
+            fromCurrency: fromWallet.currency,
+            toAmount: finalAmount,
+            toCurrency: toWallet.currency,
+            rate: exchangeRate,
+            requiresConfirmation: true
+          });
+        }
+      } catch (error) {
+        console.error('Exchange rate error:', error);
+        return res.status(500).json({ 
+          message: 'Failed to get exchange rate'
+        });
+      }
     }
 
     if (fromWalletId === toWalletId) {
@@ -64,7 +113,7 @@ const transfer = async (req, res) => {
       }, { transaction: t });
 
       // Update recipient wallet balance
-      const newToBalance = parseFloat(toWallet.balance) + parsedAmount;
+      const newToBalance = parseFloat(toWallet.balance) + finalAmount;
       await toWallet.update({
         balance: newToBalance
       }, { transaction: t });
@@ -77,7 +126,9 @@ const transfer = async (req, res) => {
         amount: parsedAmount,
         currency: fromWallet.currency,
         status: 'completed',
-        description: `Transfer to ${toWallet.currency} wallet`
+        description: fromWallet.currency === toWallet.currency
+          ? `Transfer to ${toWallet.currency} wallet`
+          : `Transfer to ${toWallet.currency} wallet (Rate: 1 ${fromWallet.currency} = ${(finalAmount/parsedAmount).toFixed(4)} ${toWallet.currency})`
       }, { transaction: t });
 
       const incomingTransaction = await Transaction.create({
