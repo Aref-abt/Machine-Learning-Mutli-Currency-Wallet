@@ -7,32 +7,14 @@
         </v-col>
       </v-row>
 
-      <!-- Exchange Rate Predictions -->
+      <!-- ML Insights -->
       <v-row>
-        <v-col cols="12" md="6">
-          <v-card>
-            <v-card-title>Exchange Rate Prediction</v-card-title>
-            <v-card-text>
-              <Line
-                v-if="chartData.exchangeRate.datasets.length"
-                :data="chartData.exchangeRate"
-                :options="chartOptions.exchangeRate"
-              />
-              <div class="mt-4">
-                <v-alert
-                  v-if="predictions.nextRate"
-                  color="info"
-                  border="left"
-                >
-                  Predicted rate for tomorrow: {{ predictions.nextRate.toFixed(4) }}
-                </v-alert>
-              </div>
-            </v-card-text>
-          </v-card>
+        <v-col cols="12" lg="8">
+          <MLInsights />
         </v-col>
 
-        <!-- Currency Distribution -->
-        <v-col cols="12" md="6">
+        <!-- Portfolio Distribution -->
+        <v-col cols="12" lg="4">
           <v-card>
             <v-card-title>Portfolio Distribution</v-card-title>
             <v-card-text>
@@ -61,13 +43,6 @@
           </v-card>
         </v-col>
       </v-row>
-
-      <!-- ML Insights -->
-      <v-row class="mt-6">
-        <v-col cols="12">
-          <MLInsights />
-        </v-col>
-      </v-row>
     </v-container>
   </div>
 </template>
@@ -78,7 +53,7 @@ import { Line, Doughnut } from 'vue-chartjs';
 import MLInsights from '../components/MLInsights.vue';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { MLService } from '../services/ml.service';
-import axios from 'axios';
+
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -89,10 +64,7 @@ export default {
   setup() {
     const mlService = new MLService();
     const chartData = ref({
-      exchangeRate: {
-        labels: [],
-        datasets: []
-      },
+
       distribution: {
         labels: [],
         datasets: []
@@ -103,20 +75,7 @@ export default {
       }
     });
 
-    const predictions = ref({
-      nextRate: null
-    });
-
-    const mlInsights = ref([]);
-
     const chartOptions = {
-      exchangeRate: {
-        responsive: true,
-        plugins: {
-          legend: { position: 'top' },
-          title: { display: true, text: 'Exchange Rate Trends & Predictions' }
-        }
-      },
       distribution: {
         responsive: true,
         plugins: {
@@ -131,39 +90,6 @@ export default {
         }
       }
     };
-
-    async function fetchExchangeRates() {
-      try {
-        // Fetch historical data from Exchange Rate API
-        const response = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
-        const rates = response.data.rates;
-        const currencies = ['EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'CNY', 'HKD', 'NZD', 'KRW'];
-        
-        // Prepare data for chart
-        chartData.value.exchangeRate = {
-          labels: currencies,
-          datasets: [{
-            label: 'Exchange Rate (USD)',
-            data: currencies.map(curr => rates[curr]),
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-          }]
-        };
-
-        // Generate mock historical data for prediction (since we don't have real historical data)
-        const baseRate = rates['EUR'];
-        const historicalData = Array(30).fill(0).map((_, i) => {
-          // Add some random variation to create historical data
-          return baseRate * (1 + (Math.random() - 0.5) * 0.02);
-        });
-
-        // Make prediction
-        const predictedRate = await mlService.predictExchangeRate(historicalData);
-        predictions.value.nextRate = predictedRate;
-      } catch (error) {
-        console.error('Error fetching exchange rates:', error);
-      }
-    }
 
     async function analyzePortfolio() {
       // Mock portfolio data
@@ -221,9 +147,9 @@ export default {
       };
 
       // Generate ML insights
-      const trends = await mlService.analyzeTrends(transactions);
-      const avgAmount = trends.USD.mean;
-      const stdDev = trends.USD.std;
+      // Mock trends data
+      const avgAmount = 500;
+      const stdDev = 100;
       
       // Calculate week-over-week change
       const weeklyAvgs = [];
@@ -236,7 +162,7 @@ export default {
         ((weeklyAvgs[weeklyAvgs.length - 1] - weeklyAvgs[weeklyAvgs.length - 2]) /
          weeklyAvgs[weeklyAvgs.length - 2] * 100) : 0;
       
-      mlInsights.value = [
+      const mlInsights = [
         {
           title: 'Spending Pattern',
           description: `Average transaction: $${avgAmount.toFixed(2)} ± $${stdDev.toFixed(2)}`,
@@ -259,7 +185,6 @@ export default {
     onMounted(async () => {
       await mlService.initialize();
       await Promise.all([
-        fetchExchangeRates(),
         analyzePortfolio(),
         analyzeTransactions()
       ]);
@@ -267,9 +192,7 @@ export default {
 
     return {
       chartData,
-      chartOptions,
-      predictions,
-      mlInsights
+      chartOptions
     };
   }
 };
@@ -278,5 +201,15 @@ export default {
 <style scoped>
 .analytics-container {
   padding: 20px;
+}
+
+.v-card {
+  height: 100%;
+}
+
+.v-card-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

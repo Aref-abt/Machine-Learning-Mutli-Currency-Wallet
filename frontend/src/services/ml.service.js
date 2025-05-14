@@ -54,10 +54,16 @@ export class MLService {
     
     for (let i = 0; i < 7; i++) {
       const prediction = await this.model.predict(currentInput).data();
+      const baseConfidence = this._calculateConfidence(data, prediction[0]);
+      
+      // Reduce confidence for predictions further in the future
+      const timeDecay = Math.max(0, 5 * i); // 5% reduction per day
+      const adjustedConfidence = Math.max(20, baseConfidence - timeDecay);
+      
       predictions.push({
         day: i + 1,
         rate: prediction[0],
-        confidence: this._calculateConfidence(data, prediction[0])
+        confidence: adjustedConfidence
       });
       
       // Update input for next prediction
@@ -80,13 +86,30 @@ export class MLService {
 
   _calculateConfidence(historicalData, prediction) {
     const mean = historicalData.reduce((a, b) => a + b) / historicalData.length;
-    const variance = historicalData.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / historicalData.length;
-    const stdDev = Math.sqrt(variance);
     
-    // Calculate how many standard deviations away from the mean
-    const zScore = Math.abs((prediction - mean) / stdDev);
-    // Convert to confidence percentage (0-100)
-    return Math.max(0, Math.min(100, (1 - (zScore / 3)) * 100));
+    // Calculate relative volatility
+    const volatility = historicalData.reduce((sum, rate) => {
+      const percentChange = Math.abs((rate - mean) / mean) * 100;
+      return sum + percentChange;
+    }, 0) / historicalData.length;
+    
+    // Calculate prediction deviation
+    const predictionChange = Math.abs((prediction - mean) / mean) * 100;
+    
+    // Base confidence on historical volatility and prediction deviation
+    let confidence = 100;
+    
+    // Reduce confidence based on volatility (max 30% reduction)
+    confidence -= Math.min(30, volatility * 2);
+    
+    // Reduce confidence based on how far the prediction is from mean (max 40% reduction)
+    confidence -= Math.min(40, predictionChange * 3);
+    
+    // Add time decay - predictions further in future are less confident
+    const timeDecay = 5; // 5% reduction per day in future
+    
+    // Ensure confidence stays between 20% and 95%
+    return Math.min(95, Math.max(20, confidence));
   }
 
   _findBestExchangeTime(predictions) {
