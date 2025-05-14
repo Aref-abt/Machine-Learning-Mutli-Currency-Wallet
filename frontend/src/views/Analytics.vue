@@ -65,31 +65,7 @@
       <!-- ML Insights -->
       <v-row class="mt-6">
         <v-col cols="12">
-          <v-card>
-            <v-card-title>ML Insights</v-card-title>
-            <v-card-text>
-              <v-row>
-                <v-col cols="12" md="4" v-for="(insight, index) in mlInsights" :key="index">
-                  <v-alert
-                    :color="insight.type"
-                    border="left"
-                    class="mb-0"
-                  >
-                    <h3 class="text-h6">{{ insight.title }}</h3>
-                    <p>{{ insight.description }}</p>
-                    <v-chip
-                      v-if="insight.confidence"
-                      :color="insight.type"
-                      class="mt-2"
-                      small
-                    >
-                      {{ insight.confidence }}% confidence
-                    </v-chip>
-                  </v-alert>
-                </v-col>
-              </v-row>
-            </v-card-text>
-          </v-card>
+          <MLInsights />
         </v-col>
       </v-row>
     </v-container>
@@ -99,6 +75,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { Line, Doughnut } from 'vue-chartjs';
+import MLInsights from '../components/MLInsights.vue';
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { MLService } from '../services/ml.service';
 import axios from 'axios';
@@ -107,7 +84,7 @@ ChartJS.register(ArcElement, CategoryScale, LinearScale, PointElement, LineEleme
 
 export default {
   name: 'Analytics',
-  components: { Line, Doughnut },
+  components: { Line, Doughnut, MLInsights },
 
   setup() {
     const mlService = new MLService();

@@ -35,7 +35,7 @@ export class MLService {
     this.initialized = true;
   }
 
-  async predictExchangeRate(historicalData) {
+  async predictExchangeRate(historicalData, fromCurrency, toCurrency) {
     await this.initialize();
     
     // Ensure we have exactly 30 data points and reshape for LSTM
@@ -45,17 +45,73 @@ export class MLService {
     }
     
     // Prepare data - reshape to [1, 30, 1] for LSTM
-    // Create proper 3D array structure [batch_size, time_steps, features]
     const reshapedData = [data.map(value => [value])];
     const tensor = tf.tensor3d(reshapedData);
     
-    // Make prediction
-    const prediction = await this.model.predict(tensor).data();
+    // Make predictions for next 7 days
+    const predictions = [];
+    let currentInput = tensor;
+    
+    for (let i = 0; i < 7; i++) {
+      const prediction = await this.model.predict(currentInput).data();
+      predictions.push({
+        day: i + 1,
+        rate: prediction[0],
+        confidence: this._calculateConfidence(data, prediction[0])
+      });
+      
+      // Update input for next prediction
+      const newData = [...data.slice(1), prediction[0]];
+      currentInput.dispose();
+      currentInput = tf.tensor3d([newData.map(value => [value])]);
+    }
     
     // Cleanup
     tensor.dispose();
+    currentInput.dispose();
     
-    return prediction[0];
+    return {
+      predictions,
+      bestTime: this._findBestExchangeTime(predictions),
+      fromCurrency,
+      toCurrency
+    };
+  }
+
+  _calculateConfidence(historicalData, prediction) {
+    const mean = historicalData.reduce((a, b) => a + b) / historicalData.length;
+    const variance = historicalData.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / historicalData.length;
+    const stdDev = Math.sqrt(variance);
+    
+    // Calculate how many standard deviations away from the mean
+    const zScore = Math.abs((prediction - mean) / stdDev);
+    // Convert to confidence percentage (0-100)
+    return Math.max(0, Math.min(100, (1 - (zScore / 3)) * 100));
+  }
+
+  _findBestExchangeTime(predictions) {
+    // Find the best rate with its confidence
+    const bestPrediction = predictions.reduce((best, current) => {
+      const score = current.rate * (current.confidence / 100); // Weight rate by confidence
+      return score > best.score ? { ...current, score } : best;
+    }, { score: -Infinity });
+
+    return {
+      day: bestPrediction.day,
+      rate: bestPrediction.rate,
+      confidence: bestPrediction.confidence,
+      potentialSavings: this._calculatePotentialSavings(predictions[0].rate, bestPrediction.rate)
+    };
+  }
+
+  _calculatePotentialSavings(currentRate, predictedBestRate) {
+    // Calculate percentage improvement
+    const improvement = ((predictedBestRate - currentRate) / currentRate) * 100;
+    return {
+      percentage: improvement,
+      // For a standard transfer of 1000 units
+      exampleAmount: Math.abs(1000 * (predictedBestRate - currentRate))
+    };
   }
 
   async detectAnomaly(transaction, userHistory) {
