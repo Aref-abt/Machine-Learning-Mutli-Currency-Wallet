@@ -23,18 +23,30 @@ const User = sequelize.define('User', {
   name: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  phone: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  avatar: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  preferred_currency: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'USD'
+  },
+  notifications_enabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true
   }
 }, {
   sequelize,
   modelName: 'User',
   tableName: 'users',
-  hooks: {
-    beforeCreate: async (user) => {
-      if (user.password_hash) {
-        user.password_hash = await bcrypt.hash(user.password_hash, 10);
-      }
-    }
-  }
+  timestamps: true
 });
 
 export default User;

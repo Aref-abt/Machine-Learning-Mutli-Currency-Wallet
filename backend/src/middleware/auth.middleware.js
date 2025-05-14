@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { logger } from '../utils/logger.js';
 
+// Default JWT configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key';
+
 const authMiddleware = async (req, res, next) => {
   try {
     logger.info('Authenticating request');
@@ -22,7 +25,7 @@ const authMiddleware = async (req, res, next) => {
       return res.status(500).json({ message: 'Server configuration error' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET);
     logger.info('Token verified successfully:', { userId: decoded.id });
     req.user = decoded;
     next();

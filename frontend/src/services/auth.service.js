@@ -1,11 +1,11 @@
-import axios from 'axios';
+import api from '../api';
 
-const API_URL = 'http://localhost:3001/api/auth';
+const API_URL = '/auth';
 
 export class AuthService {
   static async login(email, password) {
     try {
-      const response = await axios.post(`${API_URL}/login`, {
+      const response = await api.post(`${API_URL}/login`, {
         email,
         password
       });
@@ -23,7 +23,7 @@ export class AuthService {
 
   static async register(email, password) {
     try {
-      const response = await axios.post(`${API_URL}/register`, {
+      const response = await api.post(`${API_URL}/register`, {
         email,
         password
       });
@@ -42,6 +42,24 @@ export class AuthService {
   static logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+  }
+
+  static async updateProfile(formData) {
+    try {
+      const response = await api.post(`${API_URL}/profile`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.data.user) {
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Error updating profile' };
+    }
   }
 
   static getCurrentUser() {

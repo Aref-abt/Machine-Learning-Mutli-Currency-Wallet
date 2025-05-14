@@ -7,6 +7,7 @@ import Transfer from '../views/Transfer.vue';
 import CheckDeposit from '../views/CheckDeposit.vue';
 import Analytics from '../views/Analytics.vue';
 import Security from '../views/Security.vue';
+import Profile from '../views/Profile.vue';
 
 const routes = [
   {
@@ -59,6 +60,12 @@ const routes = [
     path: '/security',
     name: 'Security',
     component: Security,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile,
     meta: { requiresAuth: true }
   }
 ];
