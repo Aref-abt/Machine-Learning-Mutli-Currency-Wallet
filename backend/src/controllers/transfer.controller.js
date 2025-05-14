@@ -135,7 +135,7 @@ const transfer = async (req, res) => {
         userId: toWallet.userId, // Use recipient's userId
         walletId: toWalletId,
         type: 'transfer_in',
-        amount: parsedAmount,
+        amount: finalAmount,
         currency: toWallet.currency,
         status: 'completed',
         description: `Transfer from ${fromWallet.currency} wallet`
