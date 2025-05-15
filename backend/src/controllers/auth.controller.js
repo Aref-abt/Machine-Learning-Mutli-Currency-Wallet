@@ -2,7 +2,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import path from 'path';
+import { Op } from 'sequelize';
 import { logger } from '../utils/logger.js';
+import { sequelize } from '../database/db.js';
 import { User, Wallet } from '../models/index.js';
 
 // Default JWT configuration
@@ -35,49 +37,88 @@ const upload = multer({
 }).single('avatar');
 
 export const register = async (req, res) => {
-  const { email, password } = req.body;
-
   try {
-    // Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
+    const { username, email, password } = req.body;
 
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
+    // Validate input
+    if (!username || !email || !password) {
+      return res.status(400).json({ message: 'All fields are required' });
     }
 
-    logger.info('Creating new user:', { email });
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
 
-    // Create user
-    const user = await User.create({
-      email,
-      password_hash: hashedPassword
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one uppercase letter' });
+    }
+    if (!/[0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one number' });
+    }
+
+    // Check if user already exists - use transaction for atomicity
+    const result = await sequelize.transaction(async (t) => {
+      const existingUser = await User.findOne({
+        where: {
+          [Op.or]: [{ username }, { email }]
+        },
+        transaction: t
+      });
+
+      if (existingUser) {
+        throw new Error('Username or email already exists');
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const user = await User.create({
+        username,
+        email,
+        password: hashedPassword
+      }, { transaction: t });
+
+      // Create default wallet
+      await Wallet.create({
+        userId: user.id,
+        name: 'Default Wallet',
+        currency: 'USD',
+        balance: 0
+      }, { transaction: t });
+
+      // Generate JWT token
+      const token = jwt.sign(
+        { id: user.id, username: user.username },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRATION }
+      );
+
+      return { user, token };
     });
-    logger.info('User created:', { userId: user.id });
 
-    logger.info('Generating JWT for user:', { userId: user.id });
-    // Generate JWT
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRATION }
-    );
-    logger.info('JWT generated successfully');
-
+    // Send response
     res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: { id: user.id, email: user.email }
+      message: 'Registration successful',
+      token: result.token,
+      user: {
+        id: result.user.id,
+        username: result.user.username,
+        email: result.user.email
+      }
     });
   } catch (error) {
     logger.error('Registration error:', error);
-    logger.error('Error details:', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    });
-    res.status(500).json({ message: 'Error registering user' });
+    if (error.message === 'Username or email already exists') {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Registration failed' });
   }
 };
 
@@ -144,7 +185,7 @@ export const login = async (req, res) => {
     }
 
     // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }

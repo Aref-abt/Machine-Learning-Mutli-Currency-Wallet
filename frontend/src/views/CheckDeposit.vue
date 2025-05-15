@@ -31,9 +31,64 @@
                 :rules="[v => !!v || 'Amount is required']"
               />
 
+              <v-text-field
+                v-model="checkNumber"
+                label="Check Number*"
+                required
+                :rules="[v => !!v || 'Check number is required']"
+                hint="Found in top right corner of check"
+                persistent-hint
+              />
+
+              <v-text-field
+                v-model="routingNumber"
+                label="Routing Number*"
+                required
+                :rules="routingNumberRules"
+                hint="9-digit number at bottom of check"
+                persistent-hint
+                maxlength="9"
+                pattern="\d*"
+              />
+
+              <v-text-field
+                v-model="accountNumber"
+                label="Account Number*"
+                required
+                :rules="accountNumberRules"
+                hint="8-12 digit number after routing number"
+                persistent-hint
+                maxlength="12"
+                pattern="\d*"
+              />
+
+              <v-text-field
+                v-model="bankName"
+                label="Bank Name*"
+                required
+                :rules="[v => !!v || 'Bank name is required']"
+              />
+
+              <v-text-field
+                v-model="payeeName"
+                label="Payee Name*"
+                required
+                :rules="[v => !!v || 'Payee name is required']"
+                hint="Name on the check"
+                persistent-hint
+              />
+
+              <v-text-field
+                v-model="checkDate"
+                label="Check Date*"
+                type="date"
+                required
+                :rules="[v => !!v || 'Check date is required']"
+              />
+
               <v-file-input
                 v-model="checkImage"
-                label="Upload Check Image (Optional)"
+                label="Upload Check Image*"
                 accept="image/*"
                 prepend-icon="mdi-camera"
                 :error-messages="previewError ? [previewError] : []"
@@ -41,7 +96,8 @@
                 :show-size="true"
                 hint="Upload a check image (max 5MB)"
                 persistent-hint
-                @update:model-value="updatePreview"
+                @change="updatePreview"
+                :rules="[v => !!v || 'Check image is required']"
               />
 
               <v-card v-if="previewUrl" class="mb-4">
@@ -120,12 +176,14 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import axios from 'axios';
 
+const route = useRoute();
 const form = ref(null);
 const wallets = ref([]);
-const selectedWallet = ref(null);
-const amount = ref('');
+const selectedWallet = ref(route.query.walletId || null);
+const amount = ref(route.query.amount || '');
 const checkImage = ref(null);
 const loading = ref(false);
 const showSuccess = ref(false);
@@ -133,6 +191,25 @@ const showError = ref(false);
 const errorMessage = ref('');
 const recentDeposits = ref([]);
 const previewUrl = ref('');
+
+// Validation rules
+const routingNumberRules = [
+  v => !!v || 'Routing number is required',
+  v => /^\d{9}$/.test(v) || 'Routing number must be exactly 9 digits'
+];
+
+const accountNumberRules = [
+  v => !!v || 'Account number is required',
+  v => /^\d{8,12}$/.test(v) || 'Account number must be between 8-12 digits'
+];
+
+// Additional check fields
+const checkNumber = ref('');
+const routingNumber = ref('');
+const accountNumber = ref('');
+const bankName = ref('');
+const payeeName = ref('');
+const checkDate = ref(new Date().toISOString().split('T')[0]);
 
 const fetchWallets = async () => {
   try {
@@ -190,27 +267,49 @@ const handleDeposit = async () => {
   }
 
   // Validate check image if provided
-  if (checkImage.value?.[0]) {
-    const file = checkImage.value[0];
-    if (!file.type.startsWith('image/')) {
-      errorMessage.value = 'Please upload a valid image file';
-      showError.value = true;
-      return;
-    }
+  if (!checkImage.value) {
+    errorMessage.value = 'Please upload a check image';
+    showError.value = true;
+    return;
+  }
 
-    if (file.size > 5000000) {
-      errorMessage.value = 'Image size should be less than 5MB';
-      showError.value = true;
-      return;
-    }
+  const file = checkImage.value;
+  if (!file.type.startsWith('image/')) {
+    errorMessage.value = 'Please upload a valid image file';
+    showError.value = true;
+    return;
+  }
+
+  if (file.size > 5000000) {
+    errorMessage.value = 'Image size should be less than 5MB';
+    showError.value = true;
+    return;
   }
 
   loading.value = true;
   try {
+    console.log('Check Image:', checkImage.value);
     const formData = new FormData();
     formData.append('walletId', selectedWallet.value);
     formData.append('amount', amount.value);
-    formData.append('checkImage', checkImage.value[0]);
+    formData.append('checkNumber', checkNumber.value);
+    formData.append('routingNumber', routingNumber.value);
+    formData.append('accountNumber', accountNumber.value);
+    formData.append('bankName', bankName.value);
+    formData.append('payeeName', payeeName.value);
+    formData.append('checkDate', checkDate.value);
+    
+    // Make sure we have a file and append it correctly
+    if (checkImage.value) {
+      formData.append('checkImage', checkImage.value);
+    } else {
+      throw new Error('Check image is required');
+    }
+
+    // Log the form data to verify contents
+    for (let [key, value] of formData.entries()) {
+      console.log(key, ':', value);
+    }
 
     const response = await axios.post('http://localhost:3001/api/check/deposit', 
       formData,  
@@ -268,11 +367,12 @@ const updatePreview = () => {
   }
   previewUrl.value = '';
 
-  if (!checkImage.value?.[0]) {
+  console.log('Update Preview - checkImage:', checkImage.value);
+  if (!checkImage.value) {
     return;
   }
 
-  const file = checkImage.value[0];
+  const file = checkImage.value;
   
   // Validate file type
   if (!file.type.startsWith('image/')) {

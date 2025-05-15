@@ -83,21 +83,73 @@
     <!-- Deposit Dialog -->
     <v-dialog v-model="showDepositDialog" max-width="500px">
       <v-card>
-        <v-card-title>Deposit Funds</v-card-title>
+        <v-card-title class="d-flex align-center">
+          <v-icon icon="mdi-bank-transfer-in" class="mr-2" />
+          Deposit Funds
+        </v-card-title>
         <v-card-text>
+          <v-alert
+            v-if="depositError"
+            type="error"
+            variant="tonal"
+            closable
+            class="mb-4"
+            @click:close="depositError = null"
+          >
+            {{ depositError }}
+          </v-alert>
+
           <v-form ref="depositForm">
             <v-text-field
               v-model="transactionAmount"
-              label="Amount"
+              :label="`Amount in ${selectedWallet?.currency || 'selected currency'}`"
               type="number"
-              :rules="[v => !!v || 'Amount is required']"
+              min="0"
+              step="0.01"
+              :prefix="selectedWallet?.currency"
+              :rules="[
+                v => !!v || 'Amount is required',
+                v => v > 0 || 'Amount must be greater than 0'
+              ]"
+              class="mb-4"
             />
+
+            <v-select
+              v-model="depositMethod"
+              :items="depositMethods"
+              label="Deposit Method"
+              item-title="text"
+              item-value="value"
+              :rules="[v => !!v || 'Please select a deposit method']"
+              class="mb-4"
+            />
+
+            <v-card variant="outlined" class="mb-4 pa-4">
+              <div class="text-subtitle-1 mb-2">Deposit Details</div>
+              <v-list-item>
+                <template v-slot:prepend>
+                  <v-icon :icon="selectedWallet?.currency === 'USD' ? 'mdi-currency-usd' : 'mdi-currency-eur'" />
+                </template>
+                <v-list-item-title>
+                  {{ formatAmount(transactionAmount || 0, selectedWallet?.currency) }}
+                </v-list-item-title>
+                <v-list-item-subtitle>
+                  Will be added to your {{ selectedWallet?.currency }} wallet
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-card>
           </v-form>
         </v-card-text>
         <v-card-actions>
           <v-spacer></v-spacer>
-          <v-btn color="primary" @click="handleDeposit" :loading="loading">
-            Deposit
+          <v-btn 
+            color="primary" 
+            @click="handleDeposit" 
+            :loading="loading"
+            :disabled="!transactionAmount || !depositMethod"
+          >
+            <v-icon icon="mdi-check" class="mr-2" />
+            Confirm Deposit
           </v-btn>
           <v-btn color="error" @click="showDepositDialog = false">
             Cancel
@@ -254,22 +306,31 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { WalletService } from '../services/wallet.service';
 
 const wallets = ref([]);
 const showDepositDialog = ref(false);
 const showWithdrawDialog = ref(false);
 const showCreateWalletDialog = ref(false);
+const showTransferDialog = ref(false);
 const selectedWallet = ref(null);
+const depositError = ref(null);
+const depositMethod = ref(null);
+const depositMethods = [
+  { text: 'Bank Transfer', value: 'bank_transfer' },
+  { text: 'Credit/Debit Card', value: 'card' },
+  { text: 'Check Deposit', value: 'check' },
+  { text: 'Cash Deposit', value: 'cash' }
+];
 const transactionAmount = ref('');
 const showSuccess = ref(false);
 const successMessage = ref('');
-const showTransferDialog = ref(false);
 const recipientWalletId = ref('');
 const exchangePreview = ref(null);
 const transferForm = ref(null);
 const showError = ref(false);
-const errorMessage = ref('');
+const router = useRouter();
 const loading = ref(false);
 const depositForm = ref(null);
 const withdrawForm = ref(null);
@@ -303,6 +364,8 @@ const fetchWallets = async () => {
 const openDepositDialog = (wallet) => {
   selectedWallet.value = wallet;
   transactionAmount.value = '';
+  depositMethod.value = null;
+  depositError.value = null;
   showDepositDialog.value = true;
 };
 
@@ -313,8 +376,22 @@ const openWithdrawDialog = (wallet) => {
 };
 
 const handleDeposit = async () => {
+  depositError.value = null;
   if (!depositForm.value?.validate()) return;
-  
+
+  if (depositMethod.value === 'check') {
+    // Redirect to check deposit page
+    router.push({
+      name: 'CheckDeposit',
+      query: {
+        walletId: selectedWallet.value.id,
+        amount: transactionAmount.value
+      }
+    });
+    showDepositDialog.value = false;
+    return;
+  }
+
   loading.value = true;
   try {
     await WalletService.createTransaction(
@@ -325,14 +402,12 @@ const handleDeposit = async () => {
     );
 
     showDepositDialog.value = false;
+    successMessage.value = 'Deposit successful!';
     showSuccess.value = true;
     await fetchWallets();
   } catch (error) {
     console.error('Deposit error:', error);
-    errorMessage.value = error.message === 'Network Error' ? 
-      'Cannot connect to server. Please try again later.' : 
-      error.message || 'Deposit failed';
-    showError.value = true;
+    depositError.value = error.response?.data?.message || 'Deposit failed';
   } finally {
     loading.value = false;
   }
@@ -399,9 +474,17 @@ const getStatusColor = (balance) => {
 
 const copyToClipboard = async (text) => {
   try {
-    await navigator.clipboard.writeText(text);
-    errorMessage.value = 'Wallet address copied to clipboard!';
-    showError.value = false;
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+    }
+    successMessage.value = 'Wallet address copied to clipboard!';
     showSuccess.value = true;
   } catch (err) {
     console.error('Failed to copy:', err);
@@ -428,12 +511,12 @@ const previewTransfer = async () => {
 
   loading.value = true;
   try {
-    const response = await WalletService.previewTransfer(
-      selectedWallet.value.id,
-      recipientWalletId.value,
-      transactionAmount.value
-    );
-    exchangePreview.value = response;
+    const response = await WalletService.previewTransfer({
+      fromWalletId: selectedWallet.value.id,
+      toWalletId: recipientWalletId.value,
+      amount: parseFloat(transactionAmount.value)
+    });
+    exchangePreview.value = response.data;
   } catch (error) {
     console.error('Preview error:', error);
     errorMessage.value = error.response?.data?.message || 'Failed to preview transfer';

@@ -35,17 +35,14 @@ export class WalletService {
     }
   }
 
-  static async previewTransfer(fromWalletId, toWalletId, amount) {
+  static async previewTransfer({ fromWalletId, toWalletId, amount }) {
     try {
-      const response = await api.get('/transfer', {
-        params: {
-          preview: true,
-          fromWalletId,
-          toWalletId,
-          amount
-        }
+      const response = await api.post('/transfer/preview', {
+        fromWalletId,
+        toWalletId,
+        amount
       });
-      return response.data;
+      return response;
     } catch (error) {
       throw error.response?.data || { message: 'Error previewing transfer' };
     }

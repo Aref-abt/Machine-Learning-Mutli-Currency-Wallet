@@ -7,6 +7,16 @@
             <v-toolbar-title>Login</v-toolbar-title>
           </v-toolbar>
           <v-card-text>
+            <v-alert
+              v-if="error"
+              type="error"
+              variant="tonal"
+              closable
+              class="mb-4"
+              @click:close="error = null"
+            >
+              {{ error }}
+            </v-alert>
             <v-form @submit.prevent="handleSubmit" ref="form">
               <v-text-field
                 v-model="email"
@@ -56,17 +66,18 @@ const form = ref(null);
 const email = ref('');
 const password = ref('');
 const loading = ref(false);
+const error = ref(null);
 
 const handleSubmit = async () => {
+  error.value = null;
   if (!form.value?.validate()) return;
   
   loading.value = true;
   try {
     await AuthService.login(email.value, password.value);
-    router.push('/wallet');
-  } catch (error) {
-    console.error('Login error:', error);
-    alert(error.message || 'Login failed');
+  } catch (err) {
+    console.error('Login error:', err);
+    error.value = err.message || 'Login failed';
   } finally {
     loading.value = false;
   }

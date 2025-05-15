@@ -183,4 +183,85 @@ const getTransferHistory = async (req, res) => {
   }
 };
 
-export { transfer, getTransferHistory };
+const previewTransfer = async (req, res) => {
+  const { fromWalletId, toWalletId, amount } = req.body;
+
+  try {
+    // Validate input
+    if (!fromWalletId || !toWalletId || !amount) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      return res.status(400).json({ message: 'Invalid amount' });
+    }
+
+    // Verify wallet ownership
+    const fromWallet = await Wallet.findOne({
+      where: { id: fromWalletId, userId: req.user.id }
+    });
+
+    if (!fromWallet) {
+      return res.status(404).json({ message: 'Source wallet not found or unauthorized' });
+    }
+
+    // Find recipient wallet
+    const toWallet = await Wallet.findOne({
+      where: { id: toWalletId }
+    });
+
+    if (!toWallet) {
+      return res.status(404).json({ message: 'Recipient wallet not found' });
+    }
+
+    // Verify sufficient balance
+    const currentBalance = parseFloat(fromWallet.balance);
+    if (currentBalance < parsedAmount) {
+      return res.status(400).json({
+        message: 'Insufficient balance',
+        available: currentBalance,
+        required: parsedAmount
+      });
+    }
+
+    // If currencies are different, calculate exchange rate
+    let finalAmount = parsedAmount;
+    let exchangeRate = 1;
+
+    if (fromWallet.currency !== toWallet.currency) {
+      try {
+        const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromWallet.currency}`);
+        const data = await response.json();
+        exchangeRate = data.rates[toWallet.currency];
+        
+        if (!exchangeRate) {
+          return res.status(400).json({ 
+            message: 'Exchange rate not available for this currency pair'
+          });
+        }
+
+        finalAmount = parsedAmount * exchangeRate;
+      } catch (error) {
+        console.error('Exchange rate error:', error);
+        return res.status(500).json({ 
+          message: 'Failed to get exchange rate'
+        });
+      }
+    }
+
+    res.status(200).json({
+      fromAmount: parsedAmount,
+      fromCurrency: fromWallet.currency,
+      toAmount: finalAmount,
+      toCurrency: toWallet.currency,
+      rate: exchangeRate,
+      fees: 0 // You could add transfer fees here
+    });
+  } catch (error) {
+    console.error('Preview error:', error);
+    res.status(500).json({ message: error.message || 'Failed to preview transfer' });
+  }
+};
+
+export { transfer, getTransferHistory, previewTransfer };

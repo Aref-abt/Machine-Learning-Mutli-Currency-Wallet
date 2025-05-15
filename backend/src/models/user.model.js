@@ -8,6 +8,11 @@ const User = sequelize.define('User', {
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true
   },
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -16,7 +21,7 @@ const User = sequelize.define('User', {
       isEmail: true
     }
   },
-  password_hash: {
+  password: {
     type: DataTypes.STRING,
     allowNull: false
   },
