@@ -13,13 +13,13 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 - Fraud detection that processes transactions in less than 100ms
 - Automated monitoring of 8 major currency pairs
 
-### Technical Implementation:
+### Technical Implementation
 - **Model Architecture**: 3-layer neural network (16→8→1 neurons) with ReLU activation
 - **Training Data**: 30-day sliding window of historical rates, updated hourly
 - **Browser Execution**: Uses TensorFlow.js CPU backend, ~5MB model size
 - **API Sources**: Frankfurter API (primary) + Exchange Rate API (backup)
 
-## Why This Matters:
+## Why This Matters
 
 - **For Check Cashers**: Flags suspicious transactions in real-time based on amount and frequency
 - **For Financial Services**: Provides next-day exchange rate predictions with confidence scores
@@ -28,7 +28,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 
 ## 🛠️ Implementation Details
 
-### Model Architecture:
+### Model Architecture
 - **Exchange Rate Model**:
   - Input: 30 days of historical rates
   - Architecture: Dense(16) → Dropout(0.2) → Dense(1)
