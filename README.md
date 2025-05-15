@@ -1,6 +1,6 @@
 # ML-Enhanced#  ML Multi-Currency Virtual Wallet
 
-> A virtual wallet using TensorFlow.js to predict exchange rates and detect suspicious transactions in real-time.
+> A virtual wallet built using TensorFlow.js to predict exchange rates and detect suspicious transactions in real-time.
 
 [![Made with TensorFlow.js](https://img.shields.io/badge/Made%20with-TensorFlow.js-orange)](https://www.tensorflow.org/js)
 [![ML Powered](https://img.shields.io/badge/ML-Powered-blue)]()
