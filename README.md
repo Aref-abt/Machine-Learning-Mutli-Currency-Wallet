@@ -1,6 +1,6 @@
 # ML-Enhanced# 🚀 ML Multi-Currency Virtual Wallet
 
-> A virtual wallet using TensorFlow.js to predict exchange rates with 91% accuracy and detect fraudulent transactions in under 100ms.
+> A virtual wallet using TensorFlow.js to predict exchange rates and detect suspicious transactions in real-time.
 
 [![Made with TensorFlow.js](https://img.shields.io/badge/Made%20with-TensorFlow.js-orange)](https://www.tensorflow.org/js)
 [![ML Powered](https://img.shields.io/badge/ML-Powered-blue)]()
@@ -20,8 +20,8 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 ## 🌟 Why This Matters
 
 - **For Check Cashers**: Flags suspicious transactions in real-time based on amount and frequency
-- **For Financial Services**: Predicts exchange rates 24 hours ahead with 91% accuracy
-- **For Businesses**: Saves 2.1% average on international transfers through **smart timing**
+- **For Financial Services**: Provides next-day exchange rate predictions with confidence scores
+- **For Businesses**: Suggests optimal timing for international transfers based on historical patterns
 - **For Individuals**: Manages 8 major currencies with automated rate alerts
 
 ## 🛠️ Implementation Details
