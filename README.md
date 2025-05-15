@@ -10,7 +10,7 @@
 
 A digital wallet that runs neural networks directly in your browser using TensorFlow.js. Features include:
 - Exchange rate predictions updated every 30 minutes
-- Fraud detection that processes transactions in <100ms
+- Fraud detection that processes transactions in less than 100ms
 - Automated monitoring of 8 major currency pairs
 
 ### Technical Implementation
