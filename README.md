@@ -187,3 +187,6 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 - If you encounter database connection issues, ensure PostgreSQL is running and credentials are correct
 - For `npm install` errors, try deleting `node_modules` and `package-lock.json`, then run `npm install` again
 - Make sure all required ports (3000, 5173, 5432) are available
+
+## contact 
+aref.aboutrabi7@gmail.com
