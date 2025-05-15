@@ -46,7 +46,7 @@
                 <v-list-item-subtitle>
                   {{ formatAmount(tx.amount, tx.currency) }}
                   <span class="text-caption">
-                    {{ new Date(tx.created_at).toLocaleDateString() }}
+                    {{ formatDate(tx.createdAt) }}
                   </span>
                 </v-list-item-subtitle>
               </v-list-item>
@@ -380,6 +380,17 @@ const formatTransactionType = (type) => {
   return type.split('_').map(word => 
     word.charAt(0).toUpperCase() + word.slice(1)
   ).join(' ');
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return date.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
 };
 
 const getStatusColor = (balance) => {
