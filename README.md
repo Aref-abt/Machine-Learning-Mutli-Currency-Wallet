@@ -1,4 +1,4 @@
-# ML-Enhanced# 🚀 ML Multi-Currency Virtual Wallet
+# ML-Enhanced#  ML Multi-Currency Virtual Wallet
 
 > A virtual wallet using TensorFlow.js to predict exchange rates with 91% accuracy and detect fraudulent transactions in under 100ms.
 
@@ -11,13 +11,13 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 - Fraud detection that processes transactions in <100ms
 - Automated monitoring of 8 major currency pairs
 
-### 🤖 Technical Implementation
+### Technical Implementation
 - **Model Architecture**: 3-layer neural network (16→8→1 neurons) with ReLU activation
 - **Training Data**: 30-day sliding window of historical rates, updated hourly
 - **Browser Execution**: Uses TensorFlow.js CPU backend, ~5MB model size
 - **API Sources**: Frankfurter API (primary) + Exchange Rate API (backup)
 
-## 🌟 Why This Matters
+## Why This Matters
 
 - **For Check Cashers**: Flags suspicious transactions in real-time based on amount and frequency
 - **For Financial Services**: Predicts exchange rates 24 hours ahead with 91% accuracy
@@ -26,7 +26,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 
 ## 🛠️ Implementation Details
 
-### 🧠 Model Architecture
+### Model Architecture
 - **Exchange Rate Model**:
   - Input: 30 days of historical rates
   - Architecture: Dense(16) → Dropout(0.2) → Dense(1)
@@ -45,7 +45,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
   - Fallback latency: <50ms to mock data
   - Cache size: 24 hours of predictions
 
-### 🔧 Core Technologies
+### Core Technologies
 
 ### Machine Learning Stack
 - TensorFlow.js for in-browser ML computations
@@ -57,7 +57,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 - Vue.js 3 
 - Vuetify 
 
-## 💫 Innovative Features
+## Innovative Features
 
 - Multi-currency wallet support (USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY) will be more currencies in the future
 - ML-powered exchange rate predictions
@@ -67,14 +67,14 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 - Dark mode interface
 - Mobile-first responsive design
 
-## 🤖 ML Superpowers
+## ML Superpowers
 
 - **Transaction Monitoring**: Analyzes patterns to detect unusual activity
 - **Exchange Prediction**: Updates every hour using 5 years of historical data
 - **Pattern Learning**: Improves accuracy by 0.5% weekly through new data
 - **Local Processing**: Runs all ML models on user's device for instant results
 
-## ⚡ Tech Stack
+## Tech Stack
 
 - **Frontend**: Vue.js 3 
 - **Backend**: Node.js/Express 
@@ -90,7 +90,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 └── docs/             # Documentation
 ```
 
-## 🚀 Setup Instructions
+## Setup Instructions
 
 ### Prerequisites
 
@@ -166,7 +166,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
    ```
    The application will be available at http://localhost:5173
 
-## 🧪 Running Tests
+## Running Tests
 
 - Backend tests:
   ```bash
