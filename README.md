@@ -19,7 +19,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 - **Browser Execution**: Uses TensorFlow.js CPU backend, ~5MB model size
 - **API Sources**: Frankfurter API (primary) + Exchange Rate API (backup)
 
-## Why This Matters
+## Why This Matters:
 
 - **For Check Cashers**: Flags suspicious transactions in real-time based on amount and frequency
 - **For Financial Services**: Provides next-day exchange rate predictions with confidence scores
