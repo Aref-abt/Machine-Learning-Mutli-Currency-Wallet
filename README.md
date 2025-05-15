@@ -6,7 +6,7 @@ A digital wallet that uses machine learning to predict currency exchange rates a
 
 - **For Check Cashers**: Flags suspicious transactions in real-time based on amount and frequency
 - **For Financial Services**: Predicts exchange rates 24 hours ahead with 91% accuracy
-- **For Businesses**: Saves 2.1% average on international transfers through smart timing
+- **For Businesses**: Saves 2.1% average on international transfers through **smart timing**
 - **For Individuals**: Manages 8 major currencies with automated rate alerts
 
 ## Innovative Features
