@@ -28,11 +28,11 @@ A digital wallet that uses machine learning to predict currency exchange rates a
 
 ## Tech Stack
 
-- **Frontend**: Vue.js 3 - handles 100+ concurrent transactions
-- **Backend**: Node.js/Express - processes 1000 requests/second
-- **Database**: PostgreSQL - stores 10M+ transactions with sub-second query time
-- **ML**: TensorFlow.js - runs 2 ML models simultaneously
-- **UI**: Vuetify - 25+ pre-built financial components
+- **Frontend**: Vue.js 3 
+- **Backend**: Node.js/Express 
+- **Database**: PostgreSQL 
+- **ML**: TensorFlow.js 
+- **UI**: Vuetify 
 
 ## Project Structure
 
