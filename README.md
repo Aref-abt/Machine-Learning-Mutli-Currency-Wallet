@@ -20,7 +20,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 ## Why This Matters
 
 - **For Check Cashers**: Flags suspicious transactions in real-time based on amount and frequency
-- **For Financial Services**: Predicts exchange rates 24 hours ahead with 91% accuracy
+- **For Financial Services**: Predicts exchange rates 24 hours ahead
 - **For Businesses**: Saves 2.1% average on international transfers through **smart timing**
 - **For Individuals**: Manages 8 major currencies with automated rate alerts
 
