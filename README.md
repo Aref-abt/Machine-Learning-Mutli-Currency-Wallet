@@ -28,7 +28,7 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 
 ## 🛠️ Implementation Details
 
-### Model Architecture
+### Model Architecture:
 - **Exchange Rate Model**:
   - Input: 30 days of historical rates
   - Architecture: Dense(16) → Dropout(0.2) → Dense(1)
