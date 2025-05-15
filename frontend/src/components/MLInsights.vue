@@ -30,8 +30,20 @@
 
       <v-skeleton-loader
         v-if="loading"
-        type="article"
-      ></v-skeleton-loader>
+        type="article,text,button"
+        :loading="loading"
+        class="my-4"
+      >
+        <template v-slot:default>
+          <div class="loading-placeholder">
+            <div class="text-h6 mb-4">Loading predictions...</div>
+            <v-progress-linear
+              indeterminate
+              color="primary"
+            ></v-progress-linear>
+          </div>
+        </template>
+      </v-skeleton-loader>
 
       <v-alert
         v-else-if="error"
@@ -95,7 +107,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { LineChart } from 'echarts/charts';
@@ -199,117 +211,123 @@ const formatDate = (daysFromNow) => {
 };
 
 const formatRate = (rate) => {
-  return `1 ${fromCurrency.value} = ${rate.toFixed(4)} ${toCurrency.value}`;
+  if (rate === undefined || rate === null) return 'N/A';
+  return `1 ${fromCurrency.value} = ${Number(rate).toFixed(4)} ${toCurrency.value}`;
 };
 
 const formatPercentage = (value) => {
-  return `${value > 0 ? '+' : ''}${value.toFixed(2)}%`;
+  if (value === undefined || value === null) return 'N/A';
+  return `${value > 0 ? '+' : ''}${Number(value).toFixed(2)}%`;
 };
 
 const formatAmount = (value) => {
-  return `${value > 0 ? '+' : ''}${value.toFixed(2)} ${toCurrency.value}`;
+  if (value === undefined || value === null) return 'N/A';
+  return `${value > 0 ? '+' : ''}${Number(value).toFixed(2)} ${toCurrency.value}`;
 };
 
 // Data fetching
+// Track if component is mounted
+const isMounted = ref(true);
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  isMounted.value = false;
+});
+
 const updatePredictions = async () => {
+  if (!isMounted.value) return;
+  
   error.value = null;
+  loading.value = true;
   prediction.value = null;
   
-  if (fromCurrency.value === toCurrency.value) {
+  if (!fromCurrency.value || !toCurrency.value || fromCurrency.value === toCurrency.value) {
     error.value = 'Please select different currencies';
+    loading.value = false;
     return;
   }
-  
-  loading.value = true;
+
   try {
-    // Skip if same currency selected
-    if (fromCurrency.value === toCurrency.value) {
-      prediction.value = null;
-      return;
-    }
-
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-    
-    // Try multiple APIs in order
-    const apis = [
-      // Frankfurter API
-      async () => {
-        const startDate = thirtyDaysAgo.toISOString().split('T')[0];
-        const endDate = today.toISOString().split('T')[0];
-        const response = await fetch(
-          `https://api.frankfurter.app/${startDate}..${endDate}?from=${fromCurrency.value}&to=${toCurrency.value}`
-        );
-        const data = await response.json();
-        if (!data || !data.rates) throw new Error('No data from Frankfurter');
-        return Object.values(data.rates).map(rate => rate[toCurrency.value]);
-      },
-      // Exchange Rate API
-      async () => {
-        const response = await fetch(
-          `https://open.er-api.com/v6/latest/${fromCurrency.value}`
-        );
-        const data = await response.json();
-        if (!data || !data.rates) throw new Error('No data from ExchangeRate-API');
-        // For this API, we'll create synthetic historical data based on current rate
-        const baseRate = data.rates[toCurrency.value];
-        return Array(30).fill(0).map((_, i) => {
-          // Add small random variations to create realistic historical data
-          const randomFactor = 1 + (Math.random() - 0.5) * 0.02; // ±1% variation
-          return baseRate * randomFactor;
-        });
-      },
-      // Fallback to mock data if all APIs fail
-      async () => {
-        console.warn('Using mock exchange rate data as fallback');
-        const baseRate = {
-          'EUR': 0.85, 'GBP': 0.73, 'JPY': 110.0, 'CNY': 6.45, 'AUD': 1.35
-        }[toCurrency.value] || 1.0;
-        return Array(30).fill(0).map((_, i) => {
-          const trendFactor = 1 + (i / 60); // Slight upward trend
-          const randomFactor = 1 + (Math.random() - 0.5) * 0.02;
-          return baseRate * trendFactor * randomFactor;
-        });
-      }
-    ];
-
-    // Try each API in sequence until one works
-    let rates = null;
-    let lastError = null;
-
-    for (const api of apis) {
-      try {
-        rates = await api();
-        if (rates && rates.length >= 7) break;
-      } catch (err) {
-        console.warn('API attempt failed:', err);
-        lastError = err;
-      }
-    }
-
-    if (!rates || rates.length < 7) {
-      throw lastError || new Error('Could not fetch exchange rate data');
-    }
-    
-    prediction.value = await mlService.predictExchangeRate(
-      rates,
+    // Get historical data first
+    const historicalData = await mlService.getHistoricalRates(
       fromCurrency.value,
       toCurrency.value
     );
+
+    // Generate initial mock data using latest rate
+    const latestRate = historicalData.length > 0 ? 
+      historicalData[historicalData.length - 1].rate : 1;
+
+    const mockData = {
+      predictions: Array(7).fill(0).map((_, i) => ({
+        day: i + 1,
+        rate: latestRate * (1 + (Math.random() - 0.5) * 0.02 * (i + 1)),
+        confidence: 50
+      })),
+      bestTime: null,
+      fromCurrency: fromCurrency.value,
+      toCurrency: toCurrency.value
+    };
+
+    // Show mock data immediately
+    if (isMounted.value) {
+      prediction.value = mockData;
+    }
+
+    // Try to get real predictions
+    if (historicalData && historicalData.length > 0) {
+      const result = await mlService.predictExchangeRate(
+        fromCurrency.value,
+        toCurrency.value,
+        historicalData
+      );
+      
+      if (isMounted.value && result) {
+        prediction.value = result;
+      }
+    } else {
+      throw new Error('No historical data available');
+    }
   } catch (err) {
-    console.error('Failed to update predictions:', err);
-    error.value = err.message || 'Failed to get exchange rate predictions';
+    if (isMounted.value) {
+      console.warn('Using mock predictions due to error:', err);
+      // Keep the mock data visible, just update the error state
+      error.value = 'Using estimated rates - ' + (err.message || 'Failed to get real-time predictions');
+      
+      // Generate fallback mock data if we don't have any predictions yet
+      if (!prediction.value) {
+        prediction.value = {
+          predictions: Array(7).fill(0).map((_, i) => ({
+            day: i + 1,
+            rate: 1 * (1 + (Math.random() - 0.5) * 0.02 * (i + 1)),
+            confidence: 50
+          })),
+          bestTime: null,
+          fromCurrency: fromCurrency.value,
+          toCurrency: toCurrency.value
+        };
+      }
+    }
   } finally {
-    loading.value = false;
+    if (isMounted.value) {
+      loading.value = false;
+    }
   }
 };
 
 const refreshPredictions = () => {
-  updatePredictions();
+  if (isMounted.value) {
+    updatePredictions();
+  }
 };
 
 onMounted(() => {
+  isMounted.value = true;
   updatePredictions();
+});
+
+onBeforeUnmount(() => {
+  isMounted.value = false;
 });
 </script>
 
