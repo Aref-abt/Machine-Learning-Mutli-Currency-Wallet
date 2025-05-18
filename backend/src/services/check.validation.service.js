@@ -124,7 +124,7 @@ class CheckValidationService {
     if (riskScore >= 70) {
       return {
         verificationMethod: 'manual',
-        status: 'pending_verification',
+        status: 'on_hold',
         message: 'Check requires manual review due to high risk factors.'
       };
     }

@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/wallet', walletRoutes);
-app.use('/api/check', checkRoutes);
+app.use('/api/checks', checkRoutes);
 app.use('/api/exchange', exchangeRoutes);
 app.use('/api/transfer', transferRoutes);
 app.use('/api/transactions', transactionRoutes);

@@ -2,7 +2,7 @@ import axios from 'axios';
 
 class CheckService {
   constructor() {
-    this.apiUrl = process.env.VUE_APP_API_URL || 'http://localhost:3000';
+    this.apiUrl = process.env.VUE_APP_API_URL || 'http://localhost:3001';
     // Integration configurations
     this.integrations = {
       allTrust: {

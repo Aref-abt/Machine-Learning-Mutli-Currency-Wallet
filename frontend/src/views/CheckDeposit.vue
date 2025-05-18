@@ -311,7 +311,7 @@ const handleDeposit = async () => {
       console.log(key, ':', value);
     }
 
-    const response = await axios.post('http://localhost:3001/api/check/deposit', 
+    const response = await axios.post('http://localhost:3001/api/checks/deposit', 
       formData,  
       {
         headers: { 
