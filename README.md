@@ -1,7 +1,7 @@
 # ML-Enhanced#  ML Multi-Currency Virtual Wallet
 
 > A smart multi-currency wallet that uses neural networks to help you make better financial decisions. Runs TensorFlow.js directly in your browser to predict optimal exchange times and protect against fraud - no server-side ML needed.
-
+> 
 > Perfect for: Check cashing businesses • International traders • Financial services • Money transfer operators
 
 [![Made with TensorFlow.js](https://img.shields.io/badge/Made%20with-TensorFlow.js-orange)](https://www.tensorflow.org/js)
@@ -187,3 +187,4 @@ A digital wallet that runs neural networks directly in your browser using Tensor
 - If you encounter database connection issues, ensure PostgreSQL is running and credentials are correct
 - For `npm install` errors, try deleting `node_modules` and `package-lock.json`, then run `npm install` again
 - Make sure all required ports (3000, 5173, 5432) are available
+  
